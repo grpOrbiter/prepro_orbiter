@@ -2,7 +2,12 @@ import numpy as np
 import pickle
 from sklearn.base import BaseEstimator
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.decomposition import TruncatedSVD
+from sklearn import svm
+from sklearn.neighbors import KNeighborsClassifier
 from os.path import isfile
+from sklearn.linear_model import Perceptron
 
 def requires_grad(p):
     return p.requires_grad
@@ -15,7 +20,7 @@ class baselineModel(BaseEstimator):
         Has one parameter which is the max depth of the tree (base value of 5)
         """
         super(baselineModel, self).__init__()
-        self.classifier = DecisionTreeClassifier(max_depth=max_depth)
+        self.classifier = Perceptron(tol=1e-3, random_state=2)
         self.num_train_samples=0
         self.num_feat=1
         self.num_labels=1
