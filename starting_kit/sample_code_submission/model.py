@@ -8,10 +8,18 @@ from sklearn import svm
 from sklearn.neighbors import KNeighborsClassifier
 from os.path import isfile
 from sklearn.linear_model import Perceptron
+from sklearn.neural_network import MLPClassifier
+from sklearn import preprocessing
+from sklearn.decomposition import PCA
 
 def requires_grad(p):
     return p.requires_grad
 
+def transforme(X):
+    pca = PCA(n_components=512)
+    pca.fit(X)
+    X = pca.transform(X)
+    return X
 
 class baselineModel(BaseEstimator):
     def __init__(self, max_depth=5):
@@ -20,13 +28,15 @@ class baselineModel(BaseEstimator):
         Has one parameter which is the max depth of the tree (base value of 5)
         """
         super(baselineModel, self).__init__()
-        self.classifier = Perceptron(tol=1e-3, random_state=2)
+        self.classifier = MLPClassifier(hidden_layer_sizes=(100,100), activation= "logistic")
         self.num_train_samples=0
         self.num_feat=1
         self.num_labels=1
         self.is_trained=False
 
+
     def fit(self, X, y):
+        X = transforme(X)
         self.num_train_samples = X.shape[0]
         if X.ndim>1: self.num_feat = X.shape[1]
         print("FIT: dim(X)= [{:d}, {:d}]".format(self.num_train_samples, self.num_feat))
@@ -39,6 +49,7 @@ class baselineModel(BaseEstimator):
         self.classifier.fit(X, y)
 
     def predict(self, X):
+        X = transforme(X)
         num_test_samples = X.shape[0]
         if X.ndim>1:
             num_feat = X.shape[1]
@@ -59,3 +70,5 @@ class baselineModel(BaseEstimator):
                 self = pickle.load(f)
             print("Model reloaded from: " + modelfile)
         return self
+	
+
