@@ -11,14 +11,14 @@ from sklearn.linear_model import Perceptron
 from sklearn.neural_network import MLPClassifier
 from sklearn import preprocessing
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 
 def requires_grad(p):
     return p.requires_grad
 
 def transforme(X):
-    pca = PCA(n_components=512)
-    pca.fit(X)
-    X = pca.transform(X)
+    pca = PCA(n_components=2)
+    X = pca.fit_transform(X)
     return X
 
 class baselineModel(BaseEstimator):
@@ -70,5 +70,5 @@ class baselineModel(BaseEstimator):
                 self = pickle.load(f)
             print("Model reloaded from: " + modelfile)
         return self
-	
+
 
