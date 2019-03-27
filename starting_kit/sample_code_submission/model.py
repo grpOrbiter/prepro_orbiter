@@ -4,21 +4,24 @@ from sklearn.base import BaseEstimator
 from sklearn.tree import DecisionTreeClassifier
 from os.path import isfile
 
+### NEW CONTRIBUTION OF GROUP ORBITER ###
 from sklearn.decomposition import PCA
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
 import time
 
-import matplotlib.pyplot as plt
-
+import matplotlib.pyplot as plt # à supprimer !!!!!
+### NEW CONTRIBUTION OF GROUP ORBITER ###
 
 def requires_grad(p):
     return p.requires_grad
 
+### NEW CONTRIBUTION OF GROUP ORBITER ###
 def transforme(X, i):
     pca = PCA(n_components=i)
     X = pca.fit_transform(X)
     return X
+### NEW CONTRIBUTION OF GROUP ORBITER ###
 
 class baselineModel(BaseEstimator):
     def __init__(self, max_depth=5):
@@ -32,14 +35,18 @@ class baselineModel(BaseEstimator):
         self.num_feat=1
         self.num_labels=1
         self.is_trained=False
+        ### NEW CONTRIBUTION OF GROUP ORBITER ###
         #ajout d'attributs
         self.best_prepro=False
         self.value_best_prepro=0
+        ### NEW CONTRIBUTION OF GROUP ORBITER ###
 
     def fit(self, X, y):
+        ### NEW CONTRIBUTION OF GROUP ORBITER ###
         if self.best_prepro:
             X = transforme(X, self.value_best_prepro)
-            
+        ### NEW CONTRIBUTION OF GROUP ORBITER ###
+        
         self.num_train_samples = X.shape[0]
         if X.ndim>1: self.num_feat = X.shape[1]
         print("FIT: dim(X)= [{:d}, {:d}]".format(self.num_train_samples, self.num_feat))
@@ -52,9 +59,11 @@ class baselineModel(BaseEstimator):
         self.classifier.fit(X, y)
 
     def predict(self, X):
+        ### NEW CONTRIBUTION OF GROUP ORBITER ###
         if self.best_prepro:
             X = transforme(X, self.value_best_prepro)
-            
+        ### NEW CONTRIBUTION OF GROUP ORBITER ###
+        
         num_test_samples = X.shape[0]
         if X.ndim>1:
             num_feat = X.shape[1]
