@@ -75,7 +75,8 @@ class baselineModel(BaseEstimator):
         return self.classifier.predict(X)
 
     def save(self, path="./"):
-        pickle.dump(self, open(path + '_model.pickle', "wb"))
+        #pickle.dump(self, open(path + '_model.pickle', "wb"))
+        pass
 
     def load(self, path="./"):
         #modelfile = path + '_model.pickle'
