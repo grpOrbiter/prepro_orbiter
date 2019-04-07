@@ -7,10 +7,13 @@ from os.path import isfile
 ### NEW CONTRIBUTION OF GROUP ORBITER ###
 from sklearn.decomposition import PCA
 from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import GridSearchCV
 import time
 
-import matplotlib.pyplot as plt # à supprimer !!!!!
+soumission = True
+if not soumission :
+    import matplotlib.pyplot as plt # à supprimer !!!!!
 ### NEW CONTRIBUTION OF GROUP ORBITER ###
 
 def requires_grad(p):
@@ -30,7 +33,9 @@ class baselineModel(BaseEstimator):
         Has one parameter which is the max depth of the tree (base value of 5)
         """
         super(baselineModel, self).__init__()
-        self.classifier = DecisionTreeClassifier(max_depth=max_depth)
+        self.classifier = SVC(C=10, cache_size=200, class_weight=None, coef0=0.0, decision_function_shape='ovr', degree=3, gamma=0.001, kernel='linear', max_iter=-1, probability=False, random_state=None, shrinking=True, tol=0.001, verbose=False)
+
+        #DecisionTreeClassifier(max_depth=max_depth)
         self.num_train_samples=0
         self.num_feat=1
         self.num_labels=1
@@ -92,38 +97,64 @@ def tests_auto(X_train, Y_train):
 
     Y_train = Y_train.ravel()
     #definition des paramètres à tester pour le classifier SVC:
-    tuned_parameters = {'kernel':('linear', 'rbf'),'C':[1, 10, 100], 'gamma': [1e-3, 1e-4]} 
+    tuned_parameters = {'C':[1, 10, 100]} 
 
-    print("1° cas : recherche des meilleurs paramètres avec les images de base :")
-    grid = GridSearchCV(SVC(), tuned_parameters, cv=5, scoring='accuracy')
+    print("1° cas : recherche des meilleurs paramètres avec les images de base (SVC):")
+    grid = GridSearchCV(SVC(gamma = 'auto', kernel = 'linear'), tuned_parameters, cv=5, scoring='accuracy')
 
     debut = time.time()
     grid.fit(X_train, Y_train)
     fin = time.time() - debut
     
-    max_cv_non_prepro = grid.best_score_
+    max_cv_non_prepro_svc = grid.best_score_
     
     #Affichage du meilleur score avec les meilleurs paramètres (temps)
     print("Les meilleurs paramètres sont : {}, qui donnent un score de : {} (en {} secondes)".format(grid.best_params_, round(grid.best_score_, 3), round(fin)))
-    
-    #Graphe scores de cv avec le prepro de base et détermination meilleurs paramètres pour l'apprentissage
-    grid_mean_scores = [result for result in grid.cv_results_['mean_test_score']]
-    plt.figure(figsize=(10, 10))
-    ax = plt.subplot(121)
-    plt.plot(range(0, len(grid_mean_scores)), grid_mean_scores)
-    plt.xlabel('N° de test des paramètres')
-    plt.ylabel('Cross-Validation Accuracy')
+    if not soumission :    
+        #Graphe scores de cv avec le prepro de base et détermination meilleurs paramètres pour l'apprentissage
+        grid_mean_scores = [result for result in grid.cv_results_['mean_test_score']]
+        plt.figure(figsize=(10, 10))
+        ax = plt.subplot(121)
+        plt.plot(range(0, len(grid_mean_scores)), grid_mean_scores)
+        plt.xlabel('N° de test des paramètres')
+        plt.ylabel('Cross-Validation Accuracy')
 
-    plt.title('Cross Validation sans notre preprocessing')
-    plt.show
+        plt.title('Cross Validation sans notre preprocessing')
+        plt.show
+        
+    #definition des paramètres à tester pour le classifier MLPClassifier:
+    tuned_parameters_mlp = parameters = {'solver': ['lbfgs'], 'max_iter': [1000,1500,2000,2500,3000]}
+    print("2° cas : recherche des meilleurs paramètres avec les images de base :")
+    grid_mlp = GridSearchCV(MLPClassifier(), tuned_parameters_mlp, cv=5, scoring='accuracy')
 
+    debut = time.time()
+    grid_mlp.fit(X_train, Y_train)
+    fin = time.time() - debut
     
-    print("\n2° cas : recherche des améliorations possibles de notre preprocessing (PCA):")
+    max_cv_non_prepro_mlp = grid_mlp.best_score_
+    
+    #Affichage du meilleur score avec les meilleurs paramètres (temps)
+    print("Les meilleurs paramètres sont : {}, qui donnent un score de : {} (en {} secondes)".format(grid_mlp.best_params_, round(grid_mlp.best_score_, 3), round(fin)))
+
+    B = baselineModel()
+    if max_cv_non_prepro_mlp > max_cv_non_prepro_svc:
+        print("On sélectionne MLPClassifer !")
+        best_classifier = grid_mlp.best_estimator_
+        parameters = tuned_parameters_mlp
+        max_cv_non_prepro = max_cv_non_prepro_mlp
+    else :
+        print("On sélectionne SVC !")
+        best_classifier = grid.best_estimator_
+        parameters = tuned_parameters
+        max_cv_non_prepro = max_cv_non_prepro_svc
+   
+
+    print("\n3° cas : recherche des améliorations possibles de notre preprocessing (PCA):")
     result = []
 
     for i in range(128, 1024, 128):
         X = transforme(X_train, i)
-        g = GridSearchCV(SVC(), tuned_parameters, cv=5, scoring='accuracy')
+        g = GridSearchCV(best_classifier, parameters, cv=5, scoring='accuracy')
         debut = time.time()
         g.fit(X, Y_train)
         fin = time.time() - debut
@@ -135,12 +166,14 @@ def tests_auto(X_train, Y_train):
     valeurs_prepro_GSCV = []
     for i in range(0, len(result)):
         valeurs_prepro_GSCV.append(result[i][2])
-    plt.subplot(122)
-    plt.plot(range(128, 1024, 128), valeurs_prepro_GSCV)
-    plt.xlabel('Valeur de n_components')
-    #plt.ylabel('Cross-Validation Accuracy')
-    plt.title('Cross Validation avec notre preprocessing')
-    plt.show
+    
+    if not soumission :
+        plt.subplot(122)
+        plt.plot(range(128, 1024, 128), valeurs_prepro_GSCV)
+        plt.xlabel('Valeur de n_components')
+        plt.ylabel('Cross-Validation Accuracy')
+        plt.title('Cross Validation avec notre preprocessing')
+        plt.show
     
     #déterminer la cv max dans result
     max_cv_prepro = result[0]
@@ -153,15 +186,16 @@ def tests_auto(X_train, Y_train):
     
     #Modifications a apportées en conséquences
     retour = baselineModel()
+    retour.classifier = best_classifier
     if max_cv_prepro[2] > max_cv_non_prepro:
         #On chooisit de faire notre prepro puis l'apprentissage avec les paramètres qui ont le mieux réussit
         print("\nLe model choisit est celui avec notre preprocessing !")
-        retour.classifier = max_cv_prepro[4]
+        #retour.classifier = max_cv_prepro[4]
         retour.best_prepro = True
         retour.value_best_prepro = max_cv_prepro[0]
     else:
         print("\nLe model choisit est celui sans notre preprocessing !")
-        retour.classifier = grid.best_estimator_
+        #retour.classifier = best_classifier
         
     return retour
     
