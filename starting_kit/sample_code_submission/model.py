@@ -4,27 +4,27 @@ from sklearn.base import BaseEstimator
 from sklearn.tree import DecisionTreeClassifier
 from os.path import isfile
 
-### NEW CONTRIBUTION OF GROUP ORBITER ###
+### START NEW CONTRIBUTION OF GROUP ORBITER ###
 from sklearn.decomposition import PCA
 from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import GridSearchCV
 import time
 
-soumission = True
+soumission = False
 if not soumission :
-    import matplotlib.pyplot as plt # à supprimer !!!!!
-### NEW CONTRIBUTION OF GROUP ORBITER ###
+    import matplotlib.pyplot as plt 
+### END NEW CONTRIBUTION OF GROUP ORBITER ###
 
 def requires_grad(p):
     return p.requires_grad
 
-### NEW CONTRIBUTION OF GROUP ORBITER ###
+### START NEW CONTRIBUTION OF GROUP ORBITER ###
 def transforme(X, i):
     pca = PCA(n_components=i)
     X = pca.fit_transform(X)
     return X
-### NEW CONTRIBUTION OF GROUP ORBITER ###
+### END NEW CONTRIBUTION OF GROUP ORBITER ###
 
 class baselineModel(BaseEstimator):
     def __init__(self, max_depth=5):
@@ -40,17 +40,17 @@ class baselineModel(BaseEstimator):
         self.num_feat=1
         self.num_labels=1
         self.is_trained=False
-        ### NEW CONTRIBUTION OF GROUP ORBITER ###
+        ### START NEW CONTRIBUTION OF GROUP ORBITER ###
         #ajout d'attributs
         self.best_prepro=False
         self.value_best_prepro=0
-        ### NEW CONTRIBUTION OF GROUP ORBITER ###
+        ### END NEW CONTRIBUTION OF GROUP ORBITER ###
 
     def fit(self, X, y):
-        ### NEW CONTRIBUTION OF GROUP ORBITER ###
+        ### START NEW CONTRIBUTION OF GROUP ORBITER ###
         if self.best_prepro:
             X = transforme(X, self.value_best_prepro)
-        ### NEW CONTRIBUTION OF GROUP ORBITER ###
+        ### END NEW CONTRIBUTION OF GROUP ORBITER ###
         
         self.num_train_samples = X.shape[0]
         if X.ndim>1: self.num_feat = X.shape[1]
@@ -64,10 +64,10 @@ class baselineModel(BaseEstimator):
         self.classifier.fit(X, y)
 
     def predict(self, X):
-        ### NEW CONTRIBUTION OF GROUP ORBITER ###
+        ### START NEW CONTRIBUTION OF GROUP ORBITER ###
         if self.best_prepro:
             X = transforme(X, self.value_best_prepro)
-        ### NEW CONTRIBUTION OF GROUP ORBITER ###
+        ### END NEW CONTRIBUTION OF GROUP ORBITER ###
         
         num_test_samples = X.shape[0]
         if X.ndim>1:
@@ -92,7 +92,7 @@ class baselineModel(BaseEstimator):
         return self
 
 
-### NEW CONTRIBUTION OF GROUP ORBITER ###  
+### START NEW CONTRIBUTION OF GROUP ORBITER ###  
 def tests_auto(X_train, Y_train):
 
     Y_train = Y_train.ravel()
@@ -108,23 +108,30 @@ def tests_auto(X_train, Y_train):
     
     max_cv_non_prepro_svc = grid.best_score_
     
+    print("Correspondances graphique :\n")
+    means = [result for result in grid.cv_results_['params']]
+    for i in range(0, len(means)):
+        print("\t{} --> {}".format(i, means[i]))
+    
     #Affichage du meilleur score avec les meilleurs paramètres (temps)
     print("Les meilleurs paramètres sont : {}, qui donnent un score de : {} (en {} secondes)".format(grid.best_params_, round(grid.best_score_, 3), round(fin)))
     if not soumission :    
         #Graphe scores de cv avec le prepro de base et détermination meilleurs paramètres pour l'apprentissage
+        stds_svc = grid.cv_results_['std_test_score']
         grid_mean_scores = [result for result in grid.cv_results_['mean_test_score']]
         plt.figure(figsize=(10, 10))
         ax = plt.subplot(121)
         plt.plot(range(0, len(grid_mean_scores)), grid_mean_scores)
         plt.xlabel('N° de test des paramètres')
         plt.ylabel('Cross-Validation Accuracy')
+        plt.errorbar(range(0, len(grid_mean_scores)), grid_mean_scores, yerr=stds_svc, fmt='.k');
 
-        plt.title('Cross Validation sans notre preprocessing')
+        plt.title('Cross Validation sans notre preprocessing (SVC)')
         plt.show
         
     #definition des paramètres à tester pour le classifier MLPClassifier:
     tuned_parameters_mlp = parameters = {'solver': ['lbfgs'], 'max_iter': [1000,1500,2000,2500,3000]}
-    print("2° cas : recherche des meilleurs paramètres avec les images de base :")
+    print("2° cas : recherche des meilleurs paramètres avec les images de base (MLPClassifier):")
     grid_mlp = GridSearchCV(MLPClassifier(), tuned_parameters_mlp, cv=5, scoring='accuracy')
 
     debut = time.time()
@@ -135,8 +142,26 @@ def tests_auto(X_train, Y_train):
     
     #Affichage du meilleur score avec les meilleurs paramètres (temps)
     print("Les meilleurs paramètres sont : {}, qui donnent un score de : {} (en {} secondes)".format(grid_mlp.best_params_, round(grid_mlp.best_score_, 3), round(fin)))
+       
+    print("Correspondances graphique :\n")
+    means = [result for result in grid_mlp.cv_results_['params']]
+    for i in range(0, len(means)):
+        print("\t{} --> {}".format(i, means[i]))
+    
+    if not soumission :    
+        #Graphe scores de cv avec le prepro de base et détermination meilleurs paramètres pour l'apprentissage
+        stds_mlp = grid_mlp.cv_results_['std_test_score']
+        grid_mean_scores = [result for result in grid_mlp.cv_results_['mean_test_score']]
+        plt.figure(figsize=(10, 10))
+        ax = plt.subplot(122)
+        plt.plot(range(0, len(grid_mean_scores)), grid_mean_scores)
+        plt.xlabel('N° de test des paramètres')
+        plt.ylabel('Cross-Validation Accuracy')
+        plt.errorbar(range(0, len(grid_mean_scores)), grid_mean_scores, yerr=stds_mlp, fmt='.k');
+        plt.title('Cross Validation sans notre preprocessing (MLPClassifier)')
+        plt.show
+    
 
-    B = baselineModel()
     if max_cv_non_prepro_mlp > max_cv_non_prepro_svc:
         print("On sélectionne MLPClassifer !")
         best_classifier = grid_mlp.best_estimator_
@@ -161,14 +186,14 @@ def tests_auto(X_train, Y_train):
         res = [i, fin, g.best_score_, g.best_params_, g.best_estimator_]
         print("Pour n_components = {}, on obtient un score de {}.".format(i, round(res[2], 3)))
         result.append(res)
-        
+
     #Affichage des différentes valeurs pour connaitre la meilleur pour le prepro
     valeurs_prepro_GSCV = []
     for i in range(0, len(result)):
         valeurs_prepro_GSCV.append(result[i][2])
     
     if not soumission :
-        plt.subplot(122)
+        plt.subplot(221)
         plt.plot(range(128, 1024, 128), valeurs_prepro_GSCV)
         plt.xlabel('Valeur de n_components')
         plt.ylabel('Cross-Validation Accuracy')
