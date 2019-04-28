@@ -5,13 +5,14 @@ from sklearn.tree import DecisionTreeClassifier
 from os.path import isfile
 
 ### START NEW CONTRIBUTION OF GROUP ORBITER ###
-from sklearn.decomposition import PCA
 from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import GridSearchCV
 import time
 
-soumission = False
+from prepro import transforme
+
+soumission = True
 if not soumission :
     import matplotlib.pyplot as plt 
 ### END NEW CONTRIBUTION OF GROUP ORBITER ###
@@ -19,12 +20,6 @@ if not soumission :
 def requires_grad(p):
     return p.requires_grad
 
-### START NEW CONTRIBUTION OF GROUP ORBITER ###
-def transforme(X, i):
-    pca = PCA(n_components=i)
-    X = pca.fit_transform(X)
-    return X
-### END NEW CONTRIBUTION OF GROUP ORBITER ###
 
 class baselineModel(BaseEstimator):
     def __init__(self, max_depth=5):
